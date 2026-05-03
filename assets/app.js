@@ -1,4 +1,4 @@
-﻿const data = window.STOCK_DATA;
+const data = window.STOCK_DATA;
 const ALL = "\uc804\uccb4";
 const LISTED = "\uc0c1\uc7a5";
 const WATCHLIST_KEY = "sector-dashboard-watchlist-v1";
@@ -99,7 +99,7 @@ function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 function normalizeThemeLabel(value) {
-  return normalizeText(value) || "?쇰컲";
+  return normalizeText(value) || "일반";
 }
 function themeLooseKey(value) {
   return normalizeThemeLabel(value).replace(/\s+/g, "").toLowerCase();
@@ -129,7 +129,7 @@ function canonicalThemeLabel(value, part = "") {
 function normalizeStockTaxonomy(stock) {
   if (!stock) return;
   stock.part = cleanPartLabel(stock.part);
-  stock.theme = normalizeThemeLabel(stock.theme || stock.industry || "?쇰컲");
+  stock.theme = normalizeThemeLabel(stock.theme || stock.industry || "일반");
 }
 function normalizeAllTaxonomy() {
   data.stocks.forEach(normalizeStockTaxonomy);
@@ -158,7 +158,7 @@ function stockDisplayLabel(stock, compact = false) {
   const ticker = String(stock.ticker || stock.gfKey || "").trim();
   const name = stockPrimaryName(stock);
   if (!ticker || name === ticker) return name;
-  return compact ? `${ticker} 쨌 ${name}` : `${name} (${ticker})`;
+  return compact ? `${ticker} · ${name}` : `${name} (${ticker})`;
 }
 
 function stockSecondaryLabel(stock) {
@@ -166,7 +166,7 @@ function stockSecondaryLabel(stock) {
   const ticker = String(stock.ticker || stock.gfKey || "").trim();
   const nameEn = String(stock.nameEn || "").trim();
   const market = marketOf(stock);
-  return [ticker, nameEn && nameEn !== stockPrimaryName(stock) ? nameEn : "", market && market !== "-" ? market : ""].filter(Boolean).join(" 쨌 ");
+  return [ticker, nameEn && nameEn !== stockPrimaryName(stock) ? nameEn : "", market && market !== "-" ? market : ""].filter(Boolean).join(" · ");
 }
 
 function stockShortName(stock) {
@@ -186,9 +186,9 @@ function findStockByTicker(raw) {
 
 function relatedTickerLabels(item, limit = 8) {
   const related = [...new Set(item.related_tickers || [])].filter(Boolean);
-  if (!related.length) return ["?쒖옣怨듯넻"];
+  if (!related.length) return ["시장공통"];
   return related.slice(0, limit).map((ticker) => {
-    if (ticker === "?쒖옣怨듯넻" || ticker === "怨듯넻") return "?쒖옣怨듯넻";
+    if (ticker === "시장공통" || ticker === "공통") return "시장공통";
     const stock = findStockByTicker(ticker);
     return stock ? stockDisplayLabel(stock, true) : ticker;
   });
@@ -200,8 +200,8 @@ function populateFilters() {
   const addPart = $("#newPart");
   if (addPart) {
     const current = cleanPartLabel(addPart.value);
-    addPart.innerHTML = [`<option value="誘몃텇瑜?>誘몃텇瑜?/option>`, ...parts.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)].join("");
-    if (current && ["誘몃텇瑜?, ...parts].includes(current)) addPart.value = current;
+    addPart.innerHTML = [`<option value="미분류">미분류</option>`, ...parts.map((item) => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`)].join("");
+    if (current && ["미분류", ...parts].includes(current)) addPart.value = current;
   }
   populateThemeFilter();
   ensureThemeDatalist();
@@ -301,9 +301,9 @@ function sourceLabel(source) {
   if (raw.includes("yahoo")) return "Yahoo Finance";
   if (raw.includes("finnhub")) return "Finnhub";
   if (raw.includes("alpha")) return "Alpha Vantage";
-  if (raw.includes("sqlite") || raw.includes("sample")) return "珥덇린 ?곗씠??;
-  if (raw.includes("price_history")) return "媛寃??대젰";
-  return source || "珥덇린 ?곗씠??;
+  if (raw.includes("sqlite") || raw.includes("sample")) return "초기 데이터";
+  if (raw.includes("price_history")) return "가격 이력";
+  return source || "초기 데이터";
 }
 
 function renderMarketTickerTape(stocks) {
@@ -319,7 +319,7 @@ function renderMarketTickerTape(stocks) {
     .slice(0, 28);
   const rows = [...picks, ...rest].slice(0, 36);
   if (!rows.length) {
-    el.innerHTML = `<span>?쒖옣 ?곗빱 ?湲?쨌 媛寃??곗씠???섏쭛 ???쒖떆?⑸땲??</span>`;
+    el.innerHTML = `<span>시장 티커 대기 · 가격 데이터 수집 후 표시됩니다.</span>`;
     return;
   }
   const itemHtml = rows.map((stock) => `<button class="market-tape-item row-button" data-stock="${escapeHtml(tickerKey(stock))}" type="button" title="${escapeHtml(stockDisplayLabel(stock))}"><strong>${escapeHtml(stock.ticker || stock.gfKey || stockPrimaryName(stock))}</strong><span>${formatMoney(stock.price, stock.currency)}</span><b class="${signedClass(stock.d1)}">${pct(stock.d1)}</b></button>`).join("");
@@ -340,8 +340,8 @@ function renderMarketIndicators(items = null) {
     box = $("#marketIndicators");
   }
   const rows = items && items.length ? items : [
-    { label: "VIX", value: "?곕룞 ?湲?, changePct: null },
-    { label: "USD/KRW", value: "?곕룞 ?湲?, changePct: null },
+    { label: "VIX", value: "연동 대기", changePct: null },
+    { label: "USD/KRW", value: "연동 대기", changePct: null },
   ];
   box.innerHTML = rows.map((item) => `<span class="market-indicator"><b>${escapeHtml(item.label)}</b><strong>${escapeHtml(item.value ?? "-")}</strong>${typeof item.changePct === "number" ? `<em class="${signedClass(item.changePct)}">${pct(item.changePct)}</em>` : ""}</span>`).join("");
 }
@@ -364,7 +364,7 @@ function renderMarketHeatmap(stocks) {
   const rows = listed.length ? listed : stocks.filter((s) => s.status === LISTED);
   updateHeatmapControls();
   if (!rows.length) {
-    el.innerHTML = `<p class="empty-state">?덊듃留듭쓣 ?쒖떆??媛寃??곗씠?곌? ?놁뒿?덈떎.</p>`;
+    el.innerHTML = `<p class="empty-state">히트맵을 표시할 가격 데이터가 없습니다.</p>`;
     return;
   }
   const groups = new Map();
@@ -381,7 +381,7 @@ function renderMarketHeatmap(stocks) {
     .sort((a, b) => (b.avg ?? -999) - (a.avg ?? -999));
   el.innerHTML = groupRows.map(({ part, group, avg }) => {
     const sorted = [...group].sort(compareHeatmapStocks).slice(0, 24);
-    return `<section class="heatmap-group"><div class="heatmap-title"><strong>${escapeHtml(cleanPartLabel(part))}</strong><span class="${signedClass(avg)}">?됯퇏 ${pct(avg)} 쨌 ${group.length}媛?/span></div><div class="heatmap-tiles">${sorted.map(heatmapTile).join("")}</div></section>`;
+    return `<section class="heatmap-group"><div class="heatmap-title"><strong>${escapeHtml(cleanPartLabel(part))}</strong><span class="${signedClass(avg)}">평균 ${pct(avg)} · ${group.length}개</span></div><div class="heatmap-tiles">${sorted.map(heatmapTile).join("")}</div></section>`;
   }).join("");
   bindStockButtons();
 }
@@ -456,7 +456,7 @@ function renderTree() {
   if (!el) return;
   const q = state.treeQuery.trim().toLowerCase();
   const rows = filteredStocks().filter((s) => !q || `${s.part || ""} ${cleanPartLabel(s.part)} ${s.theme || ""} ${s.nameKr || ""} ${s.nameEn || ""} ${s.name || ""} ${s.ticker || ""} ${s.gfKey || ""}`.toLowerCase().includes(q)).slice(0, 80);
-  el.innerHTML = rows.map((s) => `<div class="tree-stock-row ${isWatched(s) ? "watched" : ""}"><button class="watch-star ${isWatched(s) ? "active" : ""}" data-watch="${escapeHtml(tickerKey(s))}" type="button" title="愿??醫낅ぉ">${isWatched(s) ? "?? : "??}</button><button class="tree-stock row-button" data-stock="${escapeHtml(tickerKey(s))}" type="button"><strong>${escapeHtml(stockPrimaryName(s))}</strong><small>${escapeHtml(stockSecondaryLabel(s))}</small></button><span>${escapeHtml(s.theme || s.part || "")}</span></div>`).join("");
+  el.innerHTML = rows.map((s) => `<div class="tree-stock-row ${isWatched(s) ? "watched" : ""}"><button class="watch-star ${isWatched(s) ? "active" : ""}" data-watch="${escapeHtml(tickerKey(s))}" type="button" title="관심 종목">${isWatched(s) ? "★" : "☆"}</button><button class="tree-stock row-button" data-stock="${escapeHtml(tickerKey(s))}" type="button"><strong>${escapeHtml(stockPrimaryName(s))}</strong><small>${escapeHtml(stockSecondaryLabel(s))}</small></button><span>${escapeHtml(s.theme || s.part || "")}</span></div>`).join("");
   bindWatchButtons();
   bindStockButtons();
 }
@@ -469,9 +469,9 @@ function renderMetricCoverage(stocks) {
   const defs = [["\ud604\uc7ac\uac00", "price"], ["PER", "per"], ["PBR", "pbr"], ["ROE", "roe"], ["\ubaa9\ud45c\uac00", "targetAvg"]];
   const sourceCounts = new Map();
   listed.forEach((s) => sourceCounts.set(sourceLabel(s._metricsSource || s.source), (sourceCounts.get(sourceLabel(s._metricsSource || s.source)) || 0) + 1));
-  const sources = [...sourceCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, count]) => `${name} ${count}`).join(" 쨌 ");
+  const sources = [...sourceCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, count]) => `${name} ${count}`).join(" · ");
   const missingCore = listed.filter((s) => typeof s.per !== "number" || typeof s.pbr !== "number" || typeof s.roe !== "number").length;
-  host.innerHTML = `<div class="coverage-head"><strong>\uc9c0\ud45c \ucc44\uc6c0 \ud604\ud669</strong><span>${listed.length}\uac1c \ud45c\uc2dc \uc885\ubaa9 \uae30\uc900</span></div><div class="coverage-grid">${defs.map(([label, key]) => { const count = listed.filter((s) => typeof metricValue(s, key) === "number").length; const p = Math.round((count / total) * 100); return `<div class="coverage-item"><span>${label}</span><strong>${count}/${listed.length}</strong><b><i style="width:${p}%"></i></b></div>`; }).join("")}</div><div class="coverage-source-note"><strong>?곗씠??異쒖쿂</strong><span>${escapeHtml(sources || "珥덇린 ?곗씠??)}</span><em>議고쉶 ?쒖꽌: ?쒓뎅 媛寃?李⑦듃 pykrx?묯inanceDataReader, 吏??FMP?뭑ahoo?묯innhub?묨lpha Vantage. PER/PBR/ROE ?듭떖 ?꾨씫 ${missingCore}媛?쨌 紐⑺몴媛??臾대즺 ?쒓났泥섏뿉??鍮꾨뒗 醫낅ぉ??留롮뒿?덈떎.</em></div>`;
+  host.innerHTML = `<div class="coverage-head"><strong>\uc9c0\ud45c \ucc44\uc6c0 \ud604\ud669</strong><span>${listed.length}\uac1c \ud45c\uc2dc \uc885\ubaa9 \uae30\uc900</span></div><div class="coverage-grid">${defs.map(([label, key]) => { const count = listed.filter((s) => typeof metricValue(s, key) === "number").length; const p = Math.round((count / total) * 100); return `<div class="coverage-item"><span>${label}</span><strong>${count}/${listed.length}</strong><b><i style="width:${p}%"></i></b></div>`; }).join("")}</div><div class="coverage-source-note"><strong>데이터 출처</strong><span>${escapeHtml(sources || "초기 데이터")}</span><em>조회 순서: 한국 가격/차트 pykrx→FinanceDataReader, 지표 FMP→Yahoo→Finnhub→Alpha Vantage. PER/PBR/ROE 핵심 누락 ${missingCore}개 · 목표가는 무료 제공처에서 비는 종목이 많습니다.</em></div>`;
 }
 
 function renderRows(stocks) {
@@ -482,7 +482,7 @@ function renderRows(stocks) {
     const bv = metricValue(b, state.sort) ?? b[state.sort] ?? -999;
     return bv - av;
   });
-  el.innerHTML = sorted.map((stock) => `<tr><td><button class="watch-star ${isWatched(stock) ? "active" : ""}" data-watch="${escapeHtml(tickerKey(stock))}" type="button" title="愿??醫낅ぉ">${isWatched(stock) ? "?? : "??}</button></td><td><button class="stock-link row-button" data-stock="${escapeHtml(tickerKey(stock))}" type="button"><strong>${escapeHtml(stockPrimaryName(stock))}</strong><span>${escapeHtml(stockSecondaryLabel(stock))}</span></button></td><td>${escapeHtml(partThemeLabel(stock))}</td><td>${escapeHtml(marketOf(stock))}</td><td>${formatMoney(stock.price, stock.currency)}</td><td>${formatNumber(stock.per, 2)}</td><td>${formatNumber(stock.pbr, 2)}</td><td>${typeof stock.roe === "number" ? pct(stock.roe / 100) : "-"}</td><td>${formatNumber(stock.forwardPe, 2)}</td><td>${formatMoney(metricValue(stock, "targetAvg"), stock.currency)}</td><td class="${signedClass(stock.d1)}">${pct(stock.d1)}</td><td class="${signedClass(stock.ytd)}">${pct(stock.ytd)}</td></tr>`).join("");
+  el.innerHTML = sorted.map((stock) => `<tr><td><button class="watch-star ${isWatched(stock) ? "active" : ""}" data-watch="${escapeHtml(tickerKey(stock))}" type="button" title="관심 종목">${isWatched(stock) ? "★" : "☆"}</button></td><td><button class="stock-link row-button" data-stock="${escapeHtml(tickerKey(stock))}" type="button"><strong>${escapeHtml(stockPrimaryName(stock))}</strong><span>${escapeHtml(stockSecondaryLabel(stock))}</span></button></td><td>${escapeHtml(partThemeLabel(stock))}</td><td>${escapeHtml(marketOf(stock))}</td><td>${formatMoney(stock.price, stock.currency)}</td><td>${formatNumber(stock.per, 2)}</td><td>${formatNumber(stock.pbr, 2)}</td><td>${typeof stock.roe === "number" ? pct(stock.roe / 100) : "-"}</td><td>${formatNumber(stock.forwardPe, 2)}</td><td>${formatMoney(metricValue(stock, "targetAvg"), stock.currency)}</td><td class="${signedClass(stock.d1)}">${pct(stock.d1)}</td><td class="${signedClass(stock.ytd)}">${pct(stock.ytd)}</td></tr>`).join("");
   bindWatchButtons();
   bindStockButtons();
   updateSortStatus();
@@ -731,13 +731,13 @@ function bindChartControls(stock) {
     tooltip.style.top = `${top}px`;
     tooltip.classList.add("active");
     if (!end) {
-      tooltip.innerHTML = `<b>?쒖옉???좏깮</b><span>${escapeHtml(start.date)} 쨌 ${formatMoney(start.close, stock.currency)}</span><em>?ㅼ쓬 吏?먯쓣 ?대┃?섏꽭??/em>`;
+      tooltip.innerHTML = `<b>시작점 선택</b><span>${escapeHtml(start.date)} · ${formatMoney(start.close, stock.currency)}</span><em>다음 지점을 클릭하세요</em>`;
       return;
     }
     const [from, to] = orderedRange(start, end);
     const change = from.close ? to.close / from.close - 1 : null;
     const diff = typeof from.close === "number" && typeof to.close === "number" ? to.close - from.close : null;
-    tooltip.innerHTML = `<b class="${signedClass(change)}">${pct(change)}</b><span>${escapeHtml(from.date)} ??${escapeHtml(to.date)}</span><em>${formatMoney(from.close, stock.currency)} ??${formatMoney(to.close, stock.currency)} 쨌 ${formatMoney(diff, stock.currency)}</em>${fixed ? "<small>?ㅼ떆 ?대┃?섎㈃ ???쒖옉??/small>" : ""}`;
+    tooltip.innerHTML = `<b class="${signedClass(change)}">${pct(change)}</b><span>${escapeHtml(from.date)} → ${escapeHtml(to.date)}</span><em>${formatMoney(from.close, stock.currency)} → ${formatMoney(to.close, stock.currency)} · ${formatMoney(diff, stock.currency)}</em>${fixed ? "<small>다시 클릭하면 새 시작점</small>" : ""}`;
   };
   const syncRange = (event, hoverPoint = null) => {
     const range = stock._chartRange;
@@ -760,7 +760,7 @@ function bindChartControls(stock) {
     stock._chartHover = { date: nearest.date, close: nearest.close, volume: nearest.volume };
     setCrosshair(nearest);
     const hover = document.querySelector(".history-chart-hover");
-    if (hover) hover.innerHTML = `<b>${escapeHtml(nearest.date)}</b><span>醫낃? ${formatMoney(nearest.close, stock.currency)}</span>`;
+    if (hover) hover.innerHTML = `<b>${escapeHtml(nearest.date)}</b><span>종가 ${formatMoney(nearest.close, stock.currency)}</span>`;
     syncRange(event, nearest);
   });
   svg.addEventListener("click", (event) => {
@@ -798,14 +798,14 @@ async function refreshWatchMetrics() {
   const filled = allTargets.filter((s) => !metricCoverageNeedsRefresh(s));
   const targets = [...missing, ...filled];
   const batchSize = 8;
-  updateMetricsRefreshStatus(`0/${targets.length} ?꾩껜 媛깆떊 以鍮?);
+  updateMetricsRefreshStatus(`0/${targets.length} 전체 갱신 준비`);
   for (let i = 0; i < targets.length; i += batchSize) {
     const batch = targets.slice(i, i + batchSize);
-    updateMetricsRefreshStatus(`${i + 1}-${Math.min(i + batchSize, targets.length)}/${targets.length} ?꾩껜 媛깆떊 以?);
+    updateMetricsRefreshStatus(`${i + 1}-${Math.min(i + batchSize, targets.length)}/${targets.length} 전체 갱신 중`);
     await Promise.all(batch.map((s) => hydrateMetricsFromApi(s, { force: metricCoverageNeedsRefresh(s), quiet: true })));
     refreshCoverageViews();
   }
-  updateMetricsRefreshStatus(`?꾨즺 쨌 誘몄콈? ${data.stocks.filter((s) => s.status === LISTED && metricCoverageNeedsRefresh(s)).length}/${allTargets.length}`);
+  updateMetricsRefreshStatus(`완료 · 미채움 ${data.stocks.filter((s) => s.status === LISTED && metricCoverageNeedsRefresh(s)).length}/${allTargets.length}`);
   renderDetail();
 }
 
@@ -870,7 +870,7 @@ function multiAgentInsightCard(stock, pos, upside, coreFilled) {
     ["PBR", stock.pbr],
     ["ROE", stock.roe],
     ["Forward PE", stock.forwardPe],
-    ["紐⑺몴媛", metricValue(stock, "targetAvg")],
+    ["목표가", metricValue(stock, "targetAvg")],
   ].filter(([, value]) => typeof value !== "number").map(([label]) => label);
   const bull = [];
   const bear = [];
@@ -878,61 +878,61 @@ function multiAgentInsightCard(stock, pos, upside, coreFilled) {
   const checks = [];
 
   if (typeof stock.roe === "number") {
-    if (stock.roe >= 15) bull.push(`ROE ${formatNumber(stock.roe, 1)}%濡??섏씡??吏?쒓? ?고샇?곸엯?덈떎.`);
-    else if (stock.roe < 0) { bear.push(`ROE ${formatNumber(stock.roe, 1)}%濡??섏씡?깆씠 留덉씠?덉뒪?낅땲??`); risks.push("ROE媛 ?뚯닔???댁씡 ?덉젙???뺤씤???꾩슂?⑸땲??"); }
-  } else checks.push("ROE ?곗씠???뺤씤");
+    if (stock.roe >= 15) bull.push(`ROE ${formatNumber(stock.roe, 1)}%로 수익성 지표가 우호적입니다.`);
+    else if (stock.roe < 0) { bear.push(`ROE ${formatNumber(stock.roe, 1)}%로 수익성이 마이너스입니다.`); risks.push("ROE가 음수라 이익 안정성 확인이 필요합니다."); }
+  } else checks.push("ROE 데이터 확인");
 
   if (typeof stock.per === "number") {
-    if (stock.per > 80) { bear.push(`PER ${formatNumber(stock.per, 1)}諛곕줈 諛몃쪟 遺?댁씠 ?쎈땲??`); risks.push("怨쟑ER 醫낅ぉ? ?ㅼ쟻 湲곕?媛 ?붾뱾由???蹂?숈꽦??而ㅼ쭏 ???덉뒿?덈떎."); }
-    else if (stock.per > 0 && stock.per <= 25) bull.push(`PER ${formatNumber(stock.per, 1)}諛곕줈 怨쇰룄??遺?댁? ?쒗븳?곸엯?덈떎.`);
-  } else checks.push("PER ?곗씠???뺤씤");
+    if (stock.per > 80) { bear.push(`PER ${formatNumber(stock.per, 1)}배로 밸류 부담이 큽니다.`); risks.push("고PER 종목은 실적 기대가 흔들릴 때 변동성이 커질 수 있습니다."); }
+    else if (stock.per > 0 && stock.per <= 25) bull.push(`PER ${formatNumber(stock.per, 1)}배로 과도한 부담은 제한적입니다.`);
+  } else checks.push("PER 데이터 확인");
 
   if (typeof stock.pbr === "number") {
-    if (stock.pbr > 10) bear.push(`PBR ${formatNumber(stock.pbr, 1)}諛곕줈 ?먯궛媛移??鍮??꾨━誘몄뾼???믪뒿?덈떎.`);
-    else if (stock.pbr > 0 && stock.pbr <= 3) bull.push(`PBR ${formatNumber(stock.pbr, 1)}諛곕줈 ?먯궛媛移?遺?댁? 鍮꾧탳????뒿?덈떎.`);
-  } else checks.push("PBR ?곗씠???뺤씤");
+    if (stock.pbr > 10) bear.push(`PBR ${formatNumber(stock.pbr, 1)}배로 자산가치 대비 프리미엄이 높습니다.`);
+    else if (stock.pbr > 0 && stock.pbr <= 3) bull.push(`PBR ${formatNumber(stock.pbr, 1)}배로 자산가치 부담은 비교적 낮습니다.`);
+  } else checks.push("PBR 데이터 확인");
 
   if (typeof upside === "number") {
-    if (upside >= 0.15) bull.push(`紐⑺몴媛 ?щ젰??${pct(upside)}濡??⑥븘 ?덉뒿?덈떎.`);
-    else if (upside < 0) bear.push(`?꾩옱媛媛 紐⑺몴媛 ?됯퇏蹂대떎 ?믪븘 紐⑺몴媛 ?щ젰? ?쒗븳?곸엯?덈떎.`);
-  } else checks.push("紐⑺몴媛 ?됯퇏 ?뺤씤");
+    if (upside >= 0.15) bull.push(`목표가 여력이 ${pct(upside)}로 남아 있습니다.`);
+    else if (upside < 0) bear.push(`현재가가 목표가 평균보다 높아 목표가 여력은 제한적입니다.`);
+  } else checks.push("목표가 평균 확인");
 
   if (typeof stock.d1 === "number") {
-    if (stock.d1 >= 0.04) bull.push(`1D ${pct(stock.d1)}濡??④린 紐⑤찘???媛뺥빀?덈떎.`);
-    else if (stock.d1 <= -0.04) bear.push(`1D ${pct(stock.d1)}濡??④린 ?섎씫 ?뺣젰???덉뒿?덈떎.`);
+    if (stock.d1 >= 0.04) bull.push(`1D ${pct(stock.d1)}로 단기 모멘텀이 강합니다.`);
+    else if (stock.d1 <= -0.04) bear.push(`1D ${pct(stock.d1)}로 단기 하락 압력이 있습니다.`);
   }
   if (typeof stock.ytd === "number") {
-    if (stock.ytd >= 0.2) bull.push(`YTD ${pct(stock.ytd)}濡?以묎린 異붿꽭媛 媛뺥빀?덈떎.`);
-    else if (stock.ytd <= -0.2) bear.push(`YTD ${pct(stock.ytd)}濡?以묎린 ?먮쫫???쏀빀?덈떎.`);
+    if (stock.ytd >= 0.2) bull.push(`YTD ${pct(stock.ytd)}로 중기 추세가 강합니다.`);
+    else if (stock.ytd <= -0.2) bear.push(`YTD ${pct(stock.ytd)}로 중기 흐름이 약합니다.`);
   }
   if (typeof pos === "number") {
-    if (pos >= 0.9) risks.push("52二?怨좎젏沅뚯뿉 媛源뚯썙 異붽꺽 吏꾩엯 由ъ뒪?ш? ?덉뒿?덈떎.");
-    else if (pos <= 0.2) risks.push("52二???먭텒?대씪 諛섎벑 ?꾪솚 ?뺤씤???꾩슂?⑸땲??");
+    if (pos >= 0.9) risks.push("52주 고점권에 가까워 추격 진입 리스크가 있습니다.");
+    else if (pos <= 0.2) risks.push("52주 저점권이라 반등 전환 확인이 필요합니다.");
   }
 
-  if (news?.sentiment === "positive") bull.push("理쒓렐 ?댁뒪 ?먮쫫? 湲띿젙 履쎌쑝濡?遺꾨쪟?⑸땲??");
-  if (news?.sentiment === "negative") { bear.push("理쒓렐 ?댁뒪 ?먮쫫? 遺??履쎌쑝濡?遺꾨쪟?⑸땲??"); risks.push("?댁뒪 ?대깽???곹뼢??媛寃⑹뿉 諛섏쁺?섎뒗吏 ?뺤씤?댁빞 ?⑸땲??"); }
-  if (!news || news.source === "empty") checks.push("理쒓렐 2???댁뒪 ?놁쓬 ?먮뒗 ?섏쭛 ?湲?);
+  if (news?.sentiment === "positive") bull.push("최근 뉴스 흐름은 긍정 쪽으로 분류됩니다.");
+  if (news?.sentiment === "negative") { bear.push("최근 뉴스 흐름은 부정 쪽으로 분류됩니다."); risks.push("뉴스 이벤트 영향이 가격에 반영되는지 확인해야 합니다."); }
+  if (!news || news.source === "empty") checks.push("최근 2일 뉴스 없음 또는 수집 대기");
 
-  if (missing.length >= 3) risks.push(`?듭떖 吏???꾨씫??留롮뒿?덈떎: ${missing.slice(0, 4).join(", ")}`);
-  if (!bull.length) bull.push("紐낇솗??媛뺤꽭 洹쇨굅媛 遺議깊빀?덈떎. 異붽? ?곗씠???뺤씤???꾩슂?⑸땲??");
-  if (!bear.length) bear.push("?쒕졆???쎌꽭 洹쇨굅???쒗븳?곸엯?덈떎.");
-  if (!risks.length) risks.push("??寃쎄퀬 ?좏샇???쒗븳?곸씠吏留??ㅼ쟻/?댁뒪 ?대깽?몃뒗 怨꾩냽 ?뺤씤?섏꽭??");
-  if (!checks.length) checks.push("理쒓렐 李⑦듃 怨좎젏쨌????뺤씤", "?ㅼ쟻 諛쒗몴 ?쇱젙 ?뺤씤", "?댁뒪 ?먮Ц ?뺤씤");
+  if (missing.length >= 3) risks.push(`핵심 지표 누락이 많습니다: ${missing.slice(0, 4).join(", ")}`);
+  if (!bull.length) bull.push("명확한 강세 근거가 부족합니다. 추가 데이터 확인이 필요합니다.");
+  if (!bear.length) bear.push("뚜렷한 약세 근거는 제한적입니다.");
+  if (!risks.length) risks.push("큰 경고 신호는 제한적이지만 실적/뉴스 이벤트는 계속 확인하세요.");
+  if (!checks.length) checks.push("최근 차트 고점·저점 확인", "실적 발표 일정 확인", "뉴스 원문 확인");
 
   const score = bull.length - bear.length - Math.max(0, risks.length - 1) - Math.max(0, 3 - coreFilled);
-  const verdict = score >= 3 ? "?고샇?? : score >= 1 ? "以묐┰ ?고샇" : score <= -3 ? "怨좎쐞?? : score <= -1 ? "二쇱쓽" : "以묐┰";
-  const tone = verdict === "?고샇?? || verdict === "以묐┰ ?고샇" ? "positive" : verdict === "二쇱쓽" || verdict === "怨좎쐞?? ? "negative" : "neutral";
-  const confidence = coreFilled >= 3 && missing.length <= 1 ? "蹂댄넻 ?댁긽" : coreFilled >= 2 ? "蹂댄넻" : "??쓬";
+  const verdict = score >= 3 ? "우호적" : score >= 1 ? "중립 우호" : score <= -3 ? "고위험" : score <= -1 ? "주의" : "중립";
+  const tone = verdict === "우호적" || verdict === "중립 우호" ? "positive" : verdict === "주의" || verdict === "고위험" ? "negative" : "neutral";
+  const confidence = coreFilled >= 3 && missing.length <= 1 ? "보통 이상" : coreFilled >= 2 ? "보통" : "낮음";
 
   const agentCards = [
-    ["??붾찘??, coreFilled >= 2 ? "遺꾩꽍 媛?? : "蹂대쪟", coreFilled >= 2 ? `?듭떖 吏??${coreFilled}/3媛?梨꾩?` : `?듭떖 吏??${coreFilled}/3媛쒕쭔 梨꾩?`],
-    ["李⑦듃", typeof stock.d1 === "number" || typeof stock.ytd === "number" ? "?뺤씤 媛?? : "蹂대쪟", `1D ${pct(stock.d1)} 쨌 YTD ${pct(stock.ytd)}`],
-    ["?댁뒪쨌留ㅽ겕濡?, news ? sentimentLabel(news.sentiment) : "?湲?, news?.headline || "理쒓렐 ?댁뒪 ?붿빟 ?湲?],
-    ["由ъ뒪??, risks.length >= 3 ? "二쇱쓽" : "?먭?", risks[0]],
+    ["펀더멘털", coreFilled >= 2 ? "분석 가능" : "보류", coreFilled >= 2 ? `핵심 지표 ${coreFilled}/3개 채움` : `핵심 지표 ${coreFilled}/3개만 채움`],
+    ["차트", typeof stock.d1 === "number" || typeof stock.ytd === "number" ? "확인 가능" : "보류", `1D ${pct(stock.d1)} · YTD ${pct(stock.ytd)}`],
+    ["뉴스·매크로", news ? sentimentLabel(news.sentiment) : "대기", news?.headline || "최근 뉴스 요약 대기"],
+    ["리스크", risks.length >= 3 ? "주의" : "점검", risks[0]],
   ];
 
-  return `<section class="multi-agent-card"><div class="coverage-head"><strong>硫??愿??遺꾩꽍</strong><span class="verdict-pill ${tone}">${verdict}</span></div><p>TradingAgents 援ъ“瑜?媛蹂띻쾶 ?곸슜??洹쒖튃 湲곕컲 ?먭??낅땲?? 留ㅼ닔쨌留ㅻ룄 異붿쿇???꾨땲???뺤씤??由ы룷?몄엯?덈떎.</p><div class="agent-card-grid">${agentCards.map(([title, status, body]) => `<article><span>${escapeHtml(title)}</span><strong>${escapeHtml(status)}</strong><p>${escapeHtml(body)}</p></article>`).join("")}</div><div class="debate-grid"><div><strong>媛뺤꽭 洹쇨굅</strong>${bull.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>?쎌꽭 洹쇨굅</strong>${bear.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>由ъ뒪??留ㅻ땲?</strong>${risks.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>泥댄겕由ъ뒪??/strong>${checks.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div><div class="portfolio-verdict"><strong>理쒖쥌 ?먭?</strong><span>${verdict}</span><em>?먮떒 ?좊ː?? ${confidence}</em></div></section>`;
+  return `<section class="multi-agent-card"><div class="coverage-head"><strong>멀티 관점 분석</strong><span class="verdict-pill ${tone}">${verdict}</span></div><p>TradingAgents 구조를 가볍게 적용한 규칙 기반 점검입니다. 매수·매도 추천이 아니라 확인용 리포트입니다.</p><div class="agent-card-grid">${agentCards.map(([title, status, body]) => `<article><span>${escapeHtml(title)}</span><strong>${escapeHtml(status)}</strong><p>${escapeHtml(body)}</p></article>`).join("")}</div><div class="debate-grid"><div><strong>강세 근거</strong>${bull.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>약세 근거</strong>${bear.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>리스크 매니저</strong>${risks.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>체크리스트</strong>${checks.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div><div class="portfolio-verdict"><strong>최종 점검</strong><span>${verdict}</span><em>판단 신뢰도: ${confidence}</em></div></section>`;
 }
 function stockNewsCard(stock) {
   const ticker = stock.ticker || stock.gfKey;
@@ -945,7 +945,7 @@ function stockNewsCard(stock) {
   }
   const articles = summary.articles || [];
   const sentimentLabel = { positive: "\uae0d\uc815", negative: "\ubd80\uc815", neutral: "\uc911\ub9bd", mixed: "\ud63c\uc7ac" }[summary.sentiment] || "\uc911\ub9bd";
-  return `<section class="detail-news-card ai-news-summary"><div class="coverage-head"><strong>AI \uc885\ubaa9 \ub274\uc2a4 \uc694\uc57d</strong><span>${sentimentLabel} 쨌 ${escapeHtml(summary.source || "AI")}</span></div><h3>${escapeHtml(summary.headline || "\ub370\uc774\ud130 \ubd80\uc871")}</h3><p>${escapeHtml(summary.reason || "")}</p><div class="ai-news-columns"><div><strong>\ud575\uc2ec \uc774\uc288</strong>${(summary.key_issues || []).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>\ud655\uc778\ud560 \uc810</strong>${(summary.watch_points || []).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>${articles.length ? `<div class="ai-news-links"><strong>\uc6d0\ubb38</strong>${articles.slice(0, 5).map((item) => `<a href="${escapeHtml(item.url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(item.publisher || "News")} 쨌 ${escapeHtml(item.title || "\uae30\uc0ac")}</a>`).join("")}</div>` : ""}<button class="ghost-button" data-stock-news-refresh="${escapeHtml(ticker || "")}" type="button">\ub2e4\uc2dc \uc694\uc57d</button></section>`;
+  return `<section class="detail-news-card ai-news-summary"><div class="coverage-head"><strong>AI \uc885\ubaa9 \ub274\uc2a4 \uc694\uc57d</strong><span>${sentimentLabel} · ${escapeHtml(summary.source || "AI")}</span></div><h3>${escapeHtml(summary.headline || "\ub370\uc774\ud130 \ubd80\uc871")}</h3><p>${escapeHtml(summary.reason || "")}</p><div class="ai-news-columns"><div><strong>\ud575\uc2ec \uc774\uc288</strong>${(summary.key_issues || []).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div><div><strong>\ud655\uc778\ud560 \uc810</strong>${(summary.watch_points || []).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>${articles.length ? `<div class="ai-news-links"><strong>\uc6d0\ubb38</strong>${articles.slice(0, 5).map((item) => `<a href="${escapeHtml(item.url || "#")}" target="_blank" rel="noreferrer">${escapeHtml(item.publisher || "News")} · ${escapeHtml(item.title || "\uae30\uc0ac")}</a>`).join("")}</div>` : ""}<button class="ghost-button" data-stock-news-refresh="${escapeHtml(ticker || "")}" type="button">\ub2e4\uc2dc \uc694\uc57d</button></section>`;
 }
 
 async function hydrateStockNews(stock, force = false) {
@@ -1048,10 +1048,10 @@ function factorBar(label, value) {
 }
 
 function newsForStock(stock) {
-  const query = encodeURIComponent(`${stockPrimaryName(stock)} ${stock.ticker || ""} 理쒖떊 ?댁뒪`);
+  const query = encodeURIComponent(`${stockPrimaryName(stock)} ${stock.ticker || ""} 최신 뉴스`);
   const naverQuery = encodeURIComponent(`${stockPrimaryName(stock)} ${stock.ticker || ""}`);
   return {
-    title: `${stockPrimaryName(stock)} 理쒖떊 ?댁뒪 寃??,
+    title: `${stockPrimaryName(stock)} 최신 뉴스 검색`,
     publisher: stock.ticker || stock.gfKey || marketOf(stock),
     url: `https://www.google.com/search?tbm=nws&q=${query}`,
     naverUrl: `https://search.naver.com/search.naver?where=news&query=${naverQuery}`,
@@ -1064,13 +1064,13 @@ function newsForStock(stock) {
 
 function renderNewsItem(item) {
   const sentiment = effectiveSentiment(item);
-  const tags = item.tags?.length ? item.tags : ["?쇰컲"];
+  const tags = item.tags?.length ? item.tags : ["일반"];
   const labels = relatedTickerLabels(item, 10);
   const dateLabel = formatNewsDate(item.published_at || item.created_at);
-  const sourceLabel = item.publisher || item.source || "?댁뒪";
+  const sourceLabel = item.publisher || item.source || "뉴스";
   const actions = [
-    item.url ? `<a href="${item.url}" target="_blank" rel="noreferrer">湲곗궗 ?닿린</a>` : "",
-    item.naverUrl ? `<a href="${item.naverUrl}" target="_blank" rel="noreferrer">?ㅼ씠踰?寃??/a>` : "",
+    item.url ? `<a href="${item.url}" target="_blank" rel="noreferrer">기사 열기</a>` : "",
+    item.naverUrl ? `<a href="${item.naverUrl}" target="_blank" rel="noreferrer">네이버 검색</a>` : "",
   ].join("");
   return `
     <article class="news-item news-board-item news-${sentiment}">
@@ -1078,11 +1078,11 @@ function renderNewsItem(item) {
         <span>${escapeHtml(sourceLabel)}</span>
         <b>${sentimentLabel(sentiment)}</b>
       </div>
-      <strong>${escapeHtml(item.title || "?쒕ぉ ?놁쓬")}</strong>
+      <strong>${escapeHtml(item.title || "제목 없음")}</strong>
       <p>${escapeHtml(readableNewsSummary(item))}</p>
       <div class="news-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
       <div class="news-board-bottom">
-        <div class="impact-labels"><em>?곹뼢 媛??/em>${labels.map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>
+        <div class="impact-labels"><em>영향 가능</em>${labels.map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>
         <div class="news-date">${escapeHtml(dateLabel)}</div>
       </div>
       <div class="news-actions">${actions}</div>
@@ -1092,7 +1092,7 @@ function renderNewsItem(item) {
 
 function readableNewsSummary(item) {
   const title = String(item.title || "").replace(/\s+/g, " ").trim();
-  let text = String(item.ai_summary || item.summary || item.title || "?쒕ぉ ?놁쓬").replace(/\s+/g, " ").trim();
+  let text = String(item.ai_summary || item.summary || item.title || "제목 없음").replace(/\s+/g, " ").trim();
   if (title && text.toLowerCase().startsWith(title.toLowerCase())) {
     text = text.slice(title.length).replace(/^\s*[-:|?]+\s*/, "").trim();
   }
@@ -1107,11 +1107,11 @@ function readableNewsSummary(item) {
 }
 
 function uniqueSentences(text) {
-  const sentences = String(text || "").split(/(?<=[.!??귨펯竊?)\s+/).filter(Boolean);
+  const sentences = String(text || "").split(/(?<=[.!?。！？])\s+/).filter(Boolean);
   const unique = [];
   const seen = new Set();
   sentences.forEach((sentence) => {
-    const key = sentence.toLowerCase().replace(/[^媛-?즑-z0-9]+/g, "");
+    const key = sentence.toLowerCase().replace(/[^가-힣a-z0-9]+/g, "");
     if (!key || seen.has(key)) return;
     seen.add(key);
     unique.push(sentence.trim());
@@ -1120,7 +1120,7 @@ function uniqueSentences(text) {
 }
 
 function hasKorean(text) {
-  return /[媛-??/.test(String(text || ""));
+  return /[가-힣]/.test(String(text || ""));
 }
 
 function truncateText(text, max = 190) {
@@ -1129,31 +1129,31 @@ function truncateText(text, max = 190) {
 }
 
 function ruleBasedKoreanNewsSummary(item, rawText = "") {
-  const labels = relatedTickerLabels(item, 2).filter((label) => label !== "?쒖옣怨듯넻");
-  const subject = labels[0] || item.topic || "?쒖옣 ?꾩껜";
+  const labels = relatedTickerLabels(item, 2).filter((label) => label !== "시장공통");
+  const subject = labels[0] || item.topic || "시장 전체";
   const tags = item.tags || [];
   const lower = `${item.title || ""} ${item.summary || ""} ${rawText}`.toLowerCase();
-  let topic = "?쇰컲 ?댁뒋";
-  if (tags.includes("?ㅼ쟻") || /earnings|revenue|eps|guidance|quarter/.test(lower)) topic = "?ㅼ쟻쨌媛?대뜕??;
-  else if (tags.includes("紐⑺몴媛") || /target|rating|upgrade|downgrade|analyst/.test(lower)) topic = "?ъ옄?섍껄쨌紐⑺몴媛";
-  else if (tags.includes("?섏＜") || /contract|order|supply/.test(lower)) topic = "?섏＜쨌怨꾩빟";
-  else if (tags.includes("洹쒖젣") || /lawsuit|probe|regulation|sanction|tariff/.test(lower)) topic = "洹쒖젣쨌?뺤콉";
-  else if (tags.includes("?좎젣??) || /product|launch|ai|chip|semiconductor/.test(lower)) topic = "?쒗뭹쨌湲곗닠";
+  let topic = "일반 이슈";
+  if (tags.includes("실적") || /earnings|revenue|eps|guidance|quarter/.test(lower)) topic = "실적·가이던스";
+  else if (tags.includes("목표가") || /target|rating|upgrade|downgrade|analyst/.test(lower)) topic = "투자의견·목표가";
+  else if (tags.includes("수주") || /contract|order|supply/.test(lower)) topic = "수주·계약";
+  else if (tags.includes("규제") || /lawsuit|probe|regulation|sanction|tariff/.test(lower)) topic = "규제·정책";
+  else if (tags.includes("신제품") || /product|launch|ai|chip|semiconductor/.test(lower)) topic = "제품·기술";
   const tone = sentimentLabel(effectiveSentiment(item));
-  return `${subject} 愿??${topic} ?댁뒪?낅땲?? ?쒕ぉ怨??쒓났 ?붿빟 湲곗??쇰줈 ${tone} ?붿씤?쇰줈 遺꾨쪟?덉쑝硫? ?먮Ц?먯꽌 湲덉븸쨌媛?대뜕?ㅒ룰퀎??洹쒕え 媛숈? ?レ옄瑜??뺤씤?댁빞 ?⑸땲??`;
+  return `${subject} 관련 ${topic} 뉴스입니다. 제목과 제공 요약 기준으로 ${tone} 요인으로 분류했으며, 원문에서 금액·가이던스·계약 규모 같은 숫자를 확인해야 합니다.`;
 }
 
 function effectiveSentiment(item) {
   if (["positive", "negative", "mixed"].includes(item.sentiment)) return item.sentiment;
   const text = `${item.title || ""} ${item.ai_summary || ""} ${item.summary || ""}`.toLowerCase();
-  const positives = ["beat", "beats", "strong", "upbeat", "surge", "soaring", "raise", "raised", "growth", "profit", "contract", "buyback", "upgrade", "?몄“", "?곹뼢", "媛뺤꽭", "?깆옣", "?섏＜", "?묒옄"];
-  const negatives = ["miss", "weak", "drop", "drops", "fall", "falls", "cut", "cuts", "downgrade", "loss", "concern", "cancel", "probe", "lawsuit", "遺吏?, "?섑뼢", "?쎌꽭", "?곸옄", "?뚯넚", "洹쒖젣", "痍⑥냼"];
+  const positives = ["beat", "beats", "strong", "upbeat", "surge", "soaring", "raise", "raised", "growth", "profit", "contract", "buyback", "upgrade", "호조", "상향", "강세", "성장", "수주", "흑자"];
+  const negatives = ["miss", "weak", "drop", "drops", "fall", "falls", "cut", "cuts", "downgrade", "loss", "concern", "cancel", "probe", "lawsuit", "부진", "하향", "약세", "적자", "소송", "규제", "취소"];
   const score = positives.filter((word) => text.includes(word)).length - negatives.filter((word) => text.includes(word)).length;
   return score > 0 ? "positive" : score < 0 ? "negative" : "neutral";
 }
 
 function formatNewsDate(value) {
-  if (!value) return "?좎쭨 ?놁쓬";
+  if (!value) return "날짜 없음";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
   return date.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -1257,7 +1257,7 @@ function renderNewsDecisionBrief(items, watchedStocks) {
   if (!box) return;
   const real = dedupeNewsItems(items || []).filter(isRealNewsItem);
   if (!real.length) {
-    box.innerHTML = `<section class="decision-brief-card empty"><div><span>Decision Brief</span><strong>?먮떒 蹂대쪟</strong></div><p>理쒓렐 2?????ㅼ젣 湲곗궗濡??뺤씤???댁뒪媛 遺議깊빀?덈떎. ?댁뒪 ?녿뒗 醫낅ぉ? 媛寃?吏??以묒떖?쇰줈留?蹂댁꽭??</p></section>`;
+    box.innerHTML = `<section class="decision-brief-card empty"><div><span>Decision Brief</span><strong>판단 보류</strong></div><p>최근 2일 내 실제 기사로 확인된 뉴스가 부족합니다. 뉴스 없는 종목은 가격/지표 중심으로만 보세요.</p></section>`;
     return;
   }
   const counts = real.reduce((acc, item) => {
@@ -1268,16 +1268,16 @@ function renderNewsDecisionBrief(items, watchedStocks) {
   const negative = counts.negative || 0;
   const positive = counts.positive || 0;
   const neutral = counts.neutral || 0;
-  const verdict = negative >= positive + 2 ? "二쇱쓽" : positive >= negative + 2 ? "?고샇?? : "以묐┰";
-  const tone = verdict === "?고샇?? ? "positive" : verdict === "二쇱쓽" ? "negative" : "neutral";
+  const verdict = negative >= positive + 2 ? "주의" : positive >= negative + 2 ? "우호적" : "중립";
+  const tone = verdict === "우호적" ? "positive" : verdict === "주의" ? "negative" : "neutral";
   const tags = topNewsTags(real).slice(0, 6);
-  const tickers = [...new Set(real.flatMap((item) => relatedTickerLabels(item, 6)))].filter((label) => label !== "?쒖옣怨듯넻").slice(0, 8);
-  box.innerHTML = `<section class="decision-brief-card"><div class="decision-brief-head"><div><span>Decision Brief</span><strong>?댁뒪 ?쒖슜 ?붿빟</strong></div><b class="verdict-pill ${tone}">${verdict}</b></div><div class="decision-stats"><span>?ㅼ젣 湲곗궗 ${real.length}嫄?/span><span>湲띿젙 ${positive}</span><span>遺??${negative}</span><span>以묐┰ ${neutral}</span></div><div class="decision-focus"><article><span>留롮씠 ?섏삩 二쇱젣</span><strong>${escapeHtml(tags.join(" 쨌 ") || "?쇰컲")}</strong></article><article><span>?곹뼢 媛??醫낅ぉ</span><strong>${escapeHtml(tickers.join(" 쨌 ") || "?쒖옣怨듯넻")}</strong></article><article><span>?쒖슜 諛⑸쾿</span><strong>以묐났 湲곗궗???섎굹???댁뒋濡?蹂닿퀬, ?ㅼ쟻쨌媛?대뜕?ㅒ룰퀎??洹쒕え 媛숈? ?レ옄瑜??먮Ц?먯꽌 ?뺤씤?섏꽭??</strong></article></div></section>`;
+  const tickers = [...new Set(real.flatMap((item) => relatedTickerLabels(item, 6)))].filter((label) => label !== "시장공통").slice(0, 8);
+  box.innerHTML = `<section class="decision-brief-card"><div class="decision-brief-head"><div><span>Decision Brief</span><strong>뉴스 활용 요약</strong></div><b class="verdict-pill ${tone}">${verdict}</b></div><div class="decision-stats"><span>실제 기사 ${real.length}건</span><span>긍정 ${positive}</span><span>부정 ${negative}</span><span>중립 ${neutral}</span></div><div class="decision-focus"><article><span>많이 나온 주제</span><strong>${escapeHtml(tags.join(" · ") || "일반")}</strong></article><article><span>영향 가능 종목</span><strong>${escapeHtml(tickers.join(" · ") || "시장공통")}</strong></article><article><span>활용 방법</span><strong>중복 기사는 하나의 이슈로 보고, 실적·가이던스·계약 규모 같은 숫자를 원문에서 확인하세요.</strong></article></div></section>`;
 }
 
 function topNewsTags(items) {
   const counts = new Map();
-  items.forEach((item) => (item.tags || ["?쇰컲"]).forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1)));
+  items.forEach((item) => (item.tags || ["일반"]).forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1)));
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tag]) => tag);
 }
 
@@ -1299,11 +1299,11 @@ function renderStockIssues(items, watchedStocks) {
         <article class="investment-news-card news-${effectiveSentiment(item)}">
           <div class="news-meta-row">
             <span>${escapeHtml(primaryNewsTag(item))}</span>
-            <b>${item._clusterCount > 1 ? `愿??湲곗궗 ${item._clusterCount}嫄? : sentimentLabel(effectiveSentiment(item))}</b>
+            <b>${item._clusterCount > 1 ? `관련 기사 ${item._clusterCount}건` : sentimentLabel(effectiveSentiment(item))}</b>
           </div>
           <strong>${escapeHtml(clusterDisplayTitle(item))}</strong>
           <p>${escapeHtml(investmentNewsTakeaway(item))}</p>
-          <div class="impact-labels"><em>?곹뼢 媛??/em>${relatedTickerLabels(item, 7).map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>
+          <div class="impact-labels"><em>영향 가능</em>${relatedTickerLabels(item, 7).map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>
           <div class="news-check-pills">${newsWatchPoints(item).map((point) => `<span>${escapeHtml(point)}</span>`).join("")}</div>
         </article>
       `).join("")}
@@ -1319,36 +1319,36 @@ function newsImportanceScore(item) {
   const tags = item.tags || [];
   let score = 0;
   if (effectiveSentiment(item) !== "neutral") score += 3;
-  if (relatedTickerLabels(item, 3).some((label) => label !== "?쒖옣怨듯넻")) score += 2;
-  if (tags.some((tag) => ["?ㅼ쟻", "紐⑺몴媛", "?섏＜", "洹쒖젣", "?좎젣??].includes(tag))) score += 3;
+  if (relatedTickerLabels(item, 3).some((label) => label !== "시장공통")) score += 2;
+  if (tags.some((tag) => ["실적", "목표가", "수주", "규제", "신제품"].includes(tag))) score += 3;
   if (isMacroNews(item)) score += 1;
   const text = `${item.title || ""} ${item.summary || ""}`.toLowerCase();
-  if (/earnings|guidance|revenue|contract|lawsuit|probe|upgrade|downgrade|?ㅼ쟻|媛?대뜕??怨꾩빟|?섏＜|?뚯넚|洹쒖젣|?곹뼢|?섑뼢/.test(text)) score += 2;
+  if (/earnings|guidance|revenue|contract|lawsuit|probe|upgrade|downgrade|실적|가이던스|계약|수주|소송|규제|상향|하향/.test(text)) score += 2;
   return score;
 }
 
 function primaryNewsTag(item) {
   const tags = item.tags || [];
-  return tags.find((tag) => tag !== "?쇰컲") || item.topic || "?쇰컲";
+  return tags.find((tag) => tag !== "일반") || item.topic || "일반";
 }
 
 function investmentNewsTakeaway(item) {
   const tag = primaryNewsTag(item);
   const sentiment = sentimentLabel(effectiveSentiment(item));
-  const targets = relatedTickerLabels(item, 3).join(" 쨌 ");
+  const targets = relatedTickerLabels(item, 3).join(" · ");
   const base = readableNewsSummary(item);
-  return `${targets}??${sentiment} 媛?μ꽦???덈뒗 ${tag} ?댁뒪?낅땲?? ${base}`;
+  return `${targets}에 ${sentiment} 가능성이 있는 ${tag} 뉴스입니다. ${base}`;
 }
 
 function newsWatchPoints(item) {
   const tag = primaryNewsTag(item);
   const points = [];
-  if (["?ㅼ쟻", "?ㅼ쟻쨌媛?대뜕??].includes(tag)) points.push("留ㅼ텧쨌EPS쨌媛?대뜕???뺤씤");
-  if (["紐⑺몴媛", "?ъ옄?섍껄쨌紐⑺몴媛"].includes(tag)) points.push("紐⑺몴媛 蹂寃????뺤씤");
-  if (["?섏＜", "?섏＜쨌怨꾩빟"].includes(tag)) points.push("怨꾩빟 洹쒕え쨌湲곌컙 ?뺤씤");
-  if (["洹쒖젣", "洹쒖젣쨌?뺤콉"].includes(tag)) points.push("?쇳쉶?깆씤吏 援ъ“??由ъ뒪?ъ씤吏 ?뺤씤");
-  if (isMacroNews(item)) points.push("湲덈━쨌?щ윭쨌?낆쥌 ?곹뼢 ?뺤씤");
-  points.push("二쇨? 諛섏쓳 ?뺤씤");
+  if (["실적", "실적·가이던스"].includes(tag)) points.push("매출·EPS·가이던스 확인");
+  if (["목표가", "투자의견·목표가"].includes(tag)) points.push("목표가 변경 폭 확인");
+  if (["수주", "수주·계약"].includes(tag)) points.push("계약 규모·기간 확인");
+  if (["규제", "규제·정책"].includes(tag)) points.push("일회성인지 구조적 리스크인지 확인");
+  if (isMacroNews(item)) points.push("금리·달러·업종 영향 확인");
+  points.push("주가 반응 확인");
   return [...new Set(points)].slice(0, 4);
 }
 
@@ -1380,7 +1380,7 @@ function renderHotTopics(items) {
         <article class="hot-topic-card hot-${topic.sentiment}">
           <div class="hot-topic-top">
             <span>Hot Topic</span>
-            <b>${topic.count}嫄?/b>
+            <b>${topic.count}건</b>
           </div>
           <strong>${escapeHtml(topic.label)}</strong>
           <p>${escapeHtml(topic.summary)}</p>
@@ -1443,31 +1443,31 @@ function clusterNewsEvents(items) {
 }
 
 function newsEventFingerprint(item) {
-  const tickers = [...new Set(item.related_tickers || ["?쒖옣怨듯넻"])].filter(Boolean).sort().slice(0, 4).join("+") || "?쒖옣怨듯넻";
+  const tickers = [...new Set(item.related_tickers || ["시장공통"])].filter(Boolean).sort().slice(0, 4).join("+") || "시장공통";
   const text = `${item.title || ""} ${item.ai_summary || ""} ${item.summary || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
   const event = newsEventType(text, item.tags || []);
-  const quarter = (text.match(/\bq[1-4]\b|\b[1-4]q\b|[1-4]遺꾧린|[1-4]遺꾧린|1遺꾧린|2遺꾧린|3遺꾧린|4遺꾧린/) || [""])[0].toLowerCase();
+  const quarter = (text.match(/\bq[1-4]\b|\b[1-4]q\b|[1-4]분기|[1-4]분기|1분기|2분기|3분기|4분기/) || [""])[0].toLowerCase();
   const year = (text.match(/20\d{2}/) || [""])[0];
   if (event !== "general") return `${tickers}|${event}|${quarter}|${year}`;
   return `${tickers}|${event}|${newsFingerprint(item).slice(0, 46)}`;
 }
 
 function newsEventType(text, tags = []) {
-  if (tags.includes("?ㅼ쟻") || /earnings|revenue|eps|guidance|quarter|results|transcript|call highlights|estimates|?ㅼ쟻|留ㅼ텧|媛?대뜕??.test(text)) return "earnings";
-  if (tags.includes("紐⑺몴媛") || /target|rating|upgrade|downgrade|analyst|紐⑺몴媛|?ъ옄?섍껄|?곹뼢|?섑뼢/.test(text)) return "rating";
-  if (tags.includes("?섏＜") || /contract|order|supply|deal|deals|?섏＜|怨꾩빟|怨듦툒/.test(text)) return "contract";
-  if (tags.includes("洹쒖젣") || /lawsuit|probe|regulation|tariff|sanction|洹쒖젣|?뚯넚|議곗궗|愿??.test(text)) return "policy";
-  if (tags.includes("?좎젣??) || /launch|product|ai|chip|semiconductor|?좎젣??異쒖떆|諛섎룄泥?.test(text)) return "product";
+  if (tags.includes("실적") || /earnings|revenue|eps|guidance|quarter|results|transcript|call highlights|estimates|실적|매출|가이던스/.test(text)) return "earnings";
+  if (tags.includes("목표가") || /target|rating|upgrade|downgrade|analyst|목표가|투자의견|상향|하향/.test(text)) return "rating";
+  if (tags.includes("수주") || /contract|order|supply|deal|deals|수주|계약|공급/.test(text)) return "contract";
+  if (tags.includes("규제") || /lawsuit|probe|regulation|tariff|sanction|규제|소송|조사|관세/.test(text)) return "policy";
+  if (tags.includes("신제품") || /launch|product|ai|chip|semiconductor|신제품|출시|반도체/.test(text)) return "product";
   return "general";
 }
 
 function clusterDisplayTitle(item) {
-  if ((item._clusterCount || 1) <= 1) return item.title || "?쒕ぉ ?놁쓬";
-  const tickers = relatedTickerLabels(item, 2).join(" 쨌 ");
+  if ((item._clusterCount || 1) <= 1) return item.title || "제목 없음";
+  const tickers = relatedTickerLabels(item, 2).join(" · ");
   const tag = primaryNewsTag(item);
   const text = `${item.title || ""} ${item.summary || ""}`.toLowerCase();
-  const quarter = (text.match(/\bq[1-4]\b|[1-4]遺꾧린/) || [""])[0].toUpperCase();
-  return `${tickers} ${quarter ? `${quarter} ` : ""}${tag} ?댁뒋 臾띠쓬`;
+  const quarter = (text.match(/\bq[1-4]\b|[1-4]분기/) || [""])[0].toUpperCase();
+  return `${tickers} ${quarter ? `${quarter} ` : ""}${tag} 이슈 묶음`;
 }
 
 function newsFingerprint(item) {
@@ -1475,7 +1475,7 @@ function newsFingerprint(item) {
     .toLowerCase()
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\b(?:com|inc|corp|ltd|plc|co|llc)\b/g, "")
-    .replace(/[^媛-?즑-z0-9]+/g, "")
+    .replace(/[^가-힣a-z0-9]+/g, "")
     .slice(0, 100);
 }
 
@@ -1498,7 +1498,7 @@ function extractHotTopics(items) {
   const topicMap = new Map();
   const addTopic = (label, item, weight = 1) => {
     const clean = String(label || "").trim();
-    if (!clean || clean.length < 2 || clean === "?쇰컲") return;
+    if (!clean || clean.length < 2 || clean === "일반") return;
     const key = clean.toLowerCase();
     if (!topicMap.has(key)) topicMap.set(key, { label: clean, score: 0, items: [], tickers: new Set(), sentiments: { positive: 0, negative: 0, neutral: 0, mixed: 0 } });
     const topic = topicMap.get(key);
@@ -1511,9 +1511,9 @@ function extractHotTopics(items) {
   dedupeNewsItems(items).forEach((item) => {
     (item.tags || []).forEach((tag) => addTopic(tag, item, 3));
     const lower = `${item.title || ""} ${item.summary || ""}`.toLowerCase();
-    if (/fed|fomc|interest rate|cpi|pce|inflation|jobs|payroll|湲덈━|?곗?|臾쇨?|怨좎슜/.test(lower)) addTopic("寃쎌젣쨌?뺤콉", item, 5);
-    if (/ai|semiconductor|chip|諛섎룄泥??멸났吏??.test(lower)) addTopic("AI쨌諛섎룄泥?, item, 4);
-    if (/earnings|revenue|guidance|?ㅼ쟻|留ㅼ텧|媛?대뜕??.test(lower)) addTopic("?ㅼ쟻쨌媛?대뜕??, item, 4);
+    if (/fed|fomc|interest rate|cpi|pce|inflation|jobs|payroll|금리|연준|물가|고용/.test(lower)) addTopic("경제·정책", item, 5);
+    if (/ai|semiconductor|chip|반도체|인공지능/.test(lower)) addTopic("AI·반도체", item, 4);
+    if (/earnings|revenue|guidance|실적|매출|가이던스/.test(lower)) addTopic("실적·가이던스", item, 4);
   });
   return [...topicMap.values()]
     .filter((topic) => topic.items.length >= 1)
@@ -1535,7 +1535,7 @@ function extractHotTopics(items) {
 function renderWatchNews() {
   const watchedStocks = data.stocks.filter(isWatched);
   const listedCount = data.stocks.filter((stock) => stock.status === LISTED).length;
-  const countLabel = state.newsScope === "watch" ? `${watchedStocks.length}媛?愿??醫낅ぉ 쨌 理쒓렐 2?? : state.newsScope === "macro" ? "誘멸뎅 寃쎌젣쨌?뺤콉 쨌 理쒓렐 2?? : `${listedCount}媛?醫낅ぉ 湲곗? 쨌 理쒓렐 2??;
+  const countLabel = state.newsScope === "watch" ? `${watchedStocks.length}개 관심 종목 · 최근 2일` : state.newsScope === "macro" ? "미국 경제·정책 · 최근 2일" : `${listedCount}개 종목 기준 · 최근 2일`;
   $("#newsCount").textContent = countLabel;
   updateNewsToolbar();
   renderAiStatus();
@@ -1586,7 +1586,7 @@ function renderNewsSections(items, watchedStocks) {
   renderHotTopics([]);
   renderStockIssues(visible, watchedStocks);
   if (!visible.length) {
-    const message = state.newsScope === "watch" && !watchedStocks.length ? "愿??醫낅ぉ???깅줉?섎㈃ 愿???댁뒪媛 ?쒖떆?⑸땲??" : "理쒓렐 2?????섏쭛???ㅼ젣 湲곗궗媛 ?녾굅??議고쉶 以묒엯?덈떎.";
+    const message = state.newsScope === "watch" && !watchedStocks.length ? "관심 종목을 등록하면 관련 뉴스가 표시됩니다." : "최근 2일 내 수집된 실제 기사가 없거나 조회 중입니다.";
     $("#newsList").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
@@ -1596,15 +1596,15 @@ function renderNewsSections(items, watchedStocks) {
 
 function isMacroNews(item) {
   const text = `${item.title || ""} ${item.ai_summary || ""} ${item.summary || ""} ${(item.tags || []).join(" ")} ${item.topic || ""}`.toLowerCase();
-  return ["寃쎌젣", "?뺤콉", "fed", "fomc", "cpi", "pce", "jobs", "payroll", "tariff", "rate", "inflation", "gdp", "treasury", "yield", "dollar", "oil", "湲덈━", "臾쇨?", "怨좎슜", "?곗?", "愿??, "援?콈", "?щ윭", "?좉?"].some((word) => text.includes(word));
+  return ["경제", "정책", "fed", "fomc", "cpi", "pce", "jobs", "payroll", "tariff", "rate", "inflation", "gdp", "treasury", "yield", "dollar", "oil", "금리", "물가", "고용", "연준", "관세", "국채", "달러", "유가"].some((word) => text.includes(word));
 }
 function newsModeFilter(item) {
   const text = `${item.title || ""} ${item.ai_summary || ""} ${item.summary || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
   if (state.newsMode === "all") return true;
-  if (state.newsMode === "memo") return (item.tags || []).includes("??硫붾え") || Boolean(stockMemos[(item.related_tickers || [])[0]]);
-  if (state.newsMode === "breaking") return ["breaking", "urgent", "?띾낫", "湲됰벑", "湲됰씫", "surge", "falls", "drops"].some((word) => text.includes(word));
-  if (state.newsMode === "report") return ["?ㅼ쟻", "由ы룷??, "紐⑺몴媛", "?ъ옄?섍껄", "媛?대뜕??, "earnings", "revenue", "eps", "target", "rating", "guidance"].some((word) => text.includes(word));
-  if (state.newsMode === "macro") return ["寃쎌젣", "?뺤콉", "fed", "fomc", "cpi", "pce", "jobs", "payroll", "tariff", "rate", "inflation", "gdp", "湲덈━", "臾쇨?", "怨좎슜", "?곗?", "愿??, "援?콈", "?щ윭"].some((word) => text.includes(word));
+  if (state.newsMode === "memo") return (item.tags || []).includes("내 메모") || Boolean(stockMemos[(item.related_tickers || [])[0]]);
+  if (state.newsMode === "breaking") return ["breaking", "urgent", "속보", "급등", "급락", "surge", "falls", "drops"].some((word) => text.includes(word));
+  if (state.newsMode === "report") return ["실적", "리포트", "목표가", "투자의견", "가이던스", "earnings", "revenue", "eps", "target", "rating", "guidance"].some((word) => text.includes(word));
+  if (state.newsMode === "macro") return ["경제", "정책", "fed", "fomc", "cpi", "pce", "jobs", "payroll", "tariff", "rate", "inflation", "gdp", "금리", "물가", "고용", "연준", "관세", "국채", "달러"].some((word) => text.includes(word));
   return true;
 }
 
@@ -1634,13 +1634,13 @@ function inferManualStock(query) {
   const raw = String(query || "").trim();
   const ticker = raw.replace(/\s+/g, "").toUpperCase();
   const isKoreanTicker = /^\d{6}$/.test(ticker);
-  return { nameKr: ticker || raw, nameEn: "", ticker, gfKey: ticker, exchange: isKoreanTicker ? "KRX" : "NASDAQ", part: "誘몃텇瑜?, theme: "?쇰컲", status: LISTED, source: "manual" };
+  return { nameKr: ticker || raw, nameEn: "", ticker, gfKey: ticker, exchange: isKoreanTicker ? "KRX" : "NASDAQ", part: "미분류", theme: "일반", status: LISTED, source: "manual" };
 }
 
 function fillAddForm(stock) {
   if (!stock) return;
-  const part = cleanPartLabel(stock.part || "誘몃텇瑜?);
-  const theme = canonicalThemeLabel(stock.theme || stock.industry || "?쇰컲", part);
+  const part = cleanPartLabel(stock.part || "미분류");
+  const theme = canonicalThemeLabel(stock.theme || stock.industry || "일반", part);
   $("#newName").value = stock.nameKr || stock.name || stock.nameEn || stock.ticker || "";
   $("#newTicker").value = stock.ticker || stock.gfKey || "";
   $("#newMarket").value = stock.exchange || stock.market || "";
@@ -1697,7 +1697,7 @@ function cleanLookupMatches(matches, query) {
 }
 
 function lookupSourceLabel(source) {
-  return ({ financial_modeling_prep: "FMP", yahoo_finance: "Yahoo", finnhub: "Finnhub", alpha_vantage: "Alpha Vantage", finance_datareader: "FDR", pykrx: "pykrx", direct_ticker: "吏곸젒 ?꾨낫", manual: "吏곸젒 ?낅젰" })[source] || source || "";
+  return ({ financial_modeling_prep: "FMP", yahoo_finance: "Yahoo", finnhub: "Finnhub", alpha_vantage: "Alpha Vantage", finance_datareader: "FDR", pykrx: "pykrx", direct_ticker: "직접 후보", manual: "직접 입력" })[source] || source || "";
 }
 
 function renderLookupBox(query, matches, loading = false) {
@@ -1709,12 +1709,12 @@ function renderLookupBox(query, matches, loading = false) {
   const list = matches.map((stock) => `
     <button class="lookup-item" data-lookup="${escapeHtml(tickerKey(stock))}" type="button">
       <strong>${escapeHtml(stockPrimaryName(stock))}</strong>
-      <span>${escapeHtml(stock.ticker || stock.gfKey || "-")} 쨌 ${escapeHtml(marketOf(stock))} 쨌 ${escapeHtml(cleanPartLabel(stock.part))} / ${escapeHtml(stock.theme || "?쇰컲")}${stock.source ? ` 쨌 ${escapeHtml(lookupSourceLabel(stock.source))}` : ""}</span>
+      <span>${escapeHtml(stock.ticker || stock.gfKey || "-")} · ${escapeHtml(marketOf(stock))} · ${escapeHtml(cleanPartLabel(stock.part))} / ${escapeHtml(stock.theme || "일반")}${stock.source ? ` · ${escapeHtml(lookupSourceLabel(stock.source))}` : ""}</span>
     </button>`).join("");
   box.innerHTML = `
-    <div class="lookup-head"><strong>${loading ? "寃??以? : "寃??寃곌낵"}</strong><button data-lookup-close type="button">?リ린</button></div>
-    ${list || `<div class="lookup-empty">?쇱튂?섎뒗 醫낅ぉ??李얠? 紐삵뻽?듬땲?? ?꾨옒 踰꾪듉?쇰줈 吏곸젒 異붽??????덉뒿?덈떎.</div>`}
-    <button class="lookup-manual" data-lookup-manual type="button"><strong>${escapeHtml(manual.ticker)} 吏곸젒 異붽?</strong><span>?대쫫/?쒖옣/?뚮쭏???꾨옒 ?낅젰移몄뿉??諛붽? ???덉뼱??</span></button>`;
+    <div class="lookup-head"><strong>${loading ? "검색 중" : "검색 결과"}</strong><button data-lookup-close type="button">닫기</button></div>
+    ${list || `<div class="lookup-empty">일치하는 종목을 찾지 못했습니다. 아래 버튼으로 직접 추가할 수 있습니다.</div>`}
+    <button class="lookup-manual" data-lookup-manual type="button"><strong>${escapeHtml(manual.ticker)} 직접 추가</strong><span>이름/시장/테마는 아래 입력칸에서 바꿀 수 있어요.</span></button>`;
   box.querySelector("[data-lookup-close]")?.addEventListener("click", closeLookupResults);
   box.querySelector("[data-lookup-manual]")?.addEventListener("click", () => { fillAddForm(manual); closeLookupResults(); });
   box.querySelectorAll("[data-lookup]").forEach((button) => {
@@ -1759,8 +1759,8 @@ async function fetchLookupResults(query, queryLower, baseMatches, requestId) {
     if (!res.ok || requestId !== lookupRequestSeq) return;
     const payload = await res.json();
         const apiMatches = (payload.results || []).map((item) => {
-      const part = cleanPartLabel(item.sector || "誘몃텇瑜?);
-      return { nameKr: item.name || item.ticker, nameEn: "", ticker: item.ticker, gfKey: item.ticker, exchange: item.market || "", part, theme: canonicalThemeLabel(item.theme || item.industry || "?쇰컲", part), status: LISTED, source: item.source };
+      const part = cleanPartLabel(item.sector || "미분류");
+      return { nameKr: item.name || item.ticker, nameEn: "", ticker: item.ticker, gfKey: item.ticker, exchange: item.market || "", part, theme: canonicalThemeLabel(item.theme || item.industry || "일반", part), status: LISTED, source: item.source };
     });
     const seen = new Set(baseMatches.map(tickerKey));
     let matches = [...baseMatches, ...apiMatches.filter((item) => !seen.has(tickerKey(item)))]
@@ -1803,11 +1803,11 @@ function addCustomStock(form) {
 
   const existing = data.stocks.find((item) => tickerKey(item) === ticker || item.ticker === ticker);
   if (existing) {
-    const part = cleanPartLabel($("#newPart").value || existing.part || "誘몃텇瑜?);
-    const theme = canonicalThemeLabel($("#newTheme").value || existing.theme || "?쇰컲", part);
+    const part = cleanPartLabel($("#newPart").value || existing.part || "미분류");
+    const theme = canonicalThemeLabel($("#newTheme").value || existing.theme || "일반", part);
     existing.part = part;
     existing.theme = theme;
-    existing.exchange = normalizeText($("#newMarket").value) || existing.exchange || "吏곸젒 ?낅젰";
+    existing.exchange = normalizeText($("#newMarket").value) || existing.exchange || "직접 입력";
     stockOverrides[tickerKey(existing)] = { ...(stockOverrides[tickerKey(existing)] || {}), part, theme, exchange: existing.exchange };
     saveOverrides();
     watchlist.add(tickerKey(existing));
@@ -1822,12 +1822,12 @@ function addCustomStock(form) {
 
   const stock = {
     no: Date.now(),
-    part: cleanPartLabel($("#newPart").value || "誘몃텇瑜?),
-    theme: canonicalThemeLabel($("#newTheme").value || "?쇰컲", $("#newPart").value || "誘몃텇瑜?),
+    part: cleanPartLabel($("#newPart").value || "미분류"),
+    theme: canonicalThemeLabel($("#newTheme").value || "일반", $("#newPart").value || "미분류"),
     nameKr: name,
     nameEn: "",
     status: LISTED,
-    exchange: normalizeText($("#newMarket").value) || "吏곸젒 ?낅젰",
+    exchange: normalizeText($("#newMarket").value) || "직접 입력",
     ticker,
     gfKey: ticker,
     currency: "",
@@ -1988,7 +1988,6 @@ checkApiStatus().then(() => {
   render();
   hydrateMarketIndicators();
 });
-
 
 
 
