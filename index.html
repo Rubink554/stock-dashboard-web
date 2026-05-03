@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>우빈 주식 대시보드</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">S</span>
+          <div>
+            <strong>우빈 주식</strong>
+            <span>Stock Terminal</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="대시보드 섹션">
+          <a href="#overview" class="active">Overview</a>
+          <a href="#tree">Tree</a>
+          <a href="#stocks">Stocks</a>
+          <a href="#watch-news">News</a>
+          <a href="#watch-news">Watchlist</a>
+        </nav>
+
+        <div class="header-search-wrap">
+          <input id="searchInput" type="search" placeholder="종목명, 티커 검색 예: AAPL, 삼성전자" />
+        </div>
+        <div class="header-actions" aria-label="상단 도구">
+          <span class="header-avatar">W</span>
+        </div>
+
+        <div class="filter-box">
+          <label for="partFilter">Part</label>
+          <select id="partFilter"></select>
+        </div>
+        <div class="filter-box">
+          <label for="themeFilter">Theme</label>
+          <select id="themeFilter"></select>
+        </div>
+        <div class="filter-box">
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter">
+            <option value="전체">전체</option>
+            <option value="상장">상장</option>
+            <option value="비상장">비상장</option>
+          </select>
+        </div>
+
+        <label class="toggle-row">
+          <input id="watchOnlyToggle" type="checkbox" />
+          <span>관심 종목만 보기</span>
+        </label>
+      </aside>
+
+      <main class="content">
+        <header class="topbar intro-topbar">
+          <div>
+            <p class="eyebrow">정보 제공용 대시보드</p>
+            <h1>시장 · 섹터 · 종목 트리</h1>
+            <p class="subtitle">
+              트리에서 종목을 고르고 별표로 관심 종목을 등록하세요. 데이터는 지연, 누락, 오류가 있을 수 있습니다.
+            </p>
+          </div>
+</header>
+
+        <section class="panel add-stock-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Add Stock</p>
+              <h2>종목 검색 및 추가</h2>
+            </div>
+            <span class="pill">내부 데이터 우선 검색</span>
+          </div>
+          <div class="stock-search-box">
+            <input id="stockLookup" class="inline-input" type="search" placeholder="종목명 또는 티커 검색 예: 삼성전자, 005930, NVDA" />
+            <div id="stockLookupResults" class="lookup-results" hidden></div>
+          </div>
+          <form id="addStockForm" class="add-stock-form">
+            <input id="newName" required placeholder="종목명 예: 삼성전자" />
+            <input id="newTicker" required placeholder="티커 예: 005930" />
+            <input id="newMarket" placeholder="시장 예: KOSPI" />
+            <select id="newPart"></select>
+            <input id="newTheme" placeholder="테마 예: AI 반도체" />
+            <button class="ghost-button" type="submit">추가</button>
+          </form>
+          <p class="form-note">외부 증권사·네이버·야후 검색 결과 자동 매칭은 백엔드 API가 켜져 있을 때 더 잘 동작합니다. 관심종목과 직접 추가한 종목은 이 브라우저에만 저장됩니다.</p>
+        </section>
+
+        <section class="terminal-strip">
+          <div id="terminalTicker" class="terminal-ticker"></div>
+          <div class="terminal-note">정보 제공용 · 데이터 지연/누락 가능</div>
+        </section>
+
+
+        <section class="market-tape-shell">
+          <div class="market-tape" id="marketTickerTape"></div>
+        </section>
+
+        <section class="market-dashboard-panel">
+          <div class="market-board-head">
+            <div>
+              <p class="eyebrow">Market Heatmap</p>
+              <h2>섹터·테마 히트맵</h2>
+            </div>
+            <div class="heatmap-controls" aria-label="히트맵 내부 정렬"><span>Part 평균 1D순</span><button class="active" data-heatmap-sort="marketCap" type="button">시총순</button><button data-heatmap-sort="move" type="button">변동률순</button></div>
+          </div>
+          <div id="marketHeatmap" class="market-heatmap"></div>
+        </section>
+<section class="workspace-grid">
+          <article class="panel tree-panel" id="tree">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Tree View</p>
+                <h2>섹터 &gt; 테마 &gt; 종목</h2>
+              </div>
+            </div>
+            <input id="treeSearch" class="inline-input" type="search" placeholder="트리 검색" />
+            <div id="treeView" class="tree-view"></div>
+          </article>
+
+          <article class="panel detail-panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Stock Detail</p>
+                <h2 id="detailTitle">종목을 선택하세요</h2>
+              </div>
+              <div class="detail-actions"><span id="metricsRefreshStatus" class="pill muted-pill">지표 대기</span><button id="refreshWatchMetricsButton" class="ghost-button" type="button">전체 지표 갱신</button><button id="detailWatchButton" class="ghost-button" type="button">관심 등록</button></div>
+            </div>
+            <div id="detailBody" class="detail-body"></div>
+          </article>
+        </section>
+
+        <section class="kpi-grid" id="overview" aria-label="핵심 지표"></section>
+
+        <section class="analysis-grid analysis-grid-single"><article class="panel wide">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Sector Performance</p>
+                <h2 id="partFlowTitle">Part별 YTD 흐름</h2>
+              </div>
+              <div class="part-flow-actions"><div class="part-flow-controls" aria-label="파트 흐름 기준"><button class="active" data-part-flow-mode="ytd" type="button">YTD</button><button data-part-flow-mode="d1" type="button">1D</button></div><span id="filteredCount" class="pill"></span></div>
+            </div>
+            <div id="partBars" class="bar-list"></div>
+          </article></section>
+
+        <section class="panel" id="stocks">
+          <div class="panel-head table-head">
+            <div>
+              <p class="eyebrow">Stock List</p>
+              <h2>종목 상세</h2>
+            </div>
+            <div class="table-actions" aria-label="종목 목록 정렬">
+              <button class="ghost-button" data-table-sort="price" type="button">현재가</button>
+              <button class="ghost-button" data-table-sort="per" type="button">PER</button>
+              <button class="ghost-button" data-table-sort="pbr" type="button">PBR</button>
+              <button class="ghost-button" data-table-sort="roe" type="button">ROE</button>
+              <button class="ghost-button" data-table-sort="targetAvg" type="button">목표가</button>
+              <button class="ghost-button" data-table-sort="ytd" type="button">YTD</button>
+              <button class="ghost-button" data-table-sort="d1" type="button">1D</button>
+            </div>
+          </div>
+          <div id="metricCoveragePanel" class="metric-coverage-panel"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>관심</th>
+                  <th>종목</th>
+                  <th>Part / Theme</th>
+                  <th>시장</th>
+                  <th>현재가</th>
+                  <th>PER</th>
+                  <th>PBR</th>
+                  <th>ROE</th>
+                  <th>Forward PE</th>
+                  <th>목표가 평균</th>
+                  <th>1D</th>
+                  <th>YTD</th>
+                  
+                </tr>
+              </thead>
+              <tbody id="stockRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel" id="watch-news">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Market News</p>
+              <h2>시장·종목 뉴스</h2>
+            </div>
+            <span id="newsCount" class="pill"></span>
+          </div>
+          <div class="news-scope-tabs" aria-label="뉴스 범위">
+            <button class="active" data-news-scope="market" type="button">전체 시장</button>
+            <button data-news-scope="watch" type="button">관심 종목</button>
+            <button data-news-scope="macro" type="button">경제·정책</button>
+          </div>
+          <div class="news-toolbar" aria-label="뉴스 필터">
+            <button class="active" data-news-mode="all" type="button">전체</button>
+            <button data-news-mode="breaking" type="button">속보</button>
+            <button data-news-mode="report" type="button">실적·리포트</button>
+            <button data-news-mode="macro" type="button">경제·정책</button>
+            <button data-news-mode="memo" type="button">내 메모</button>
+          </div>
+          <div id="aiStatusBanner" class="ai-status-banner"></div>
+          <div id="economicCalendarList" class="economic-calendar-list"></div>
+          <div id="marketBriefingList" class="market-briefing-list"></div>
+          <div id="newsDecisionBrief" class="news-decision-brief"></div>
+          <div id="stockIssueList" class="stock-issue-list"></div>
+          <div id="hotTopicList" class="hot-topic-list"></div>
+          <div id="newsList" class="news-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./assets/data.js"></script>
+    <script src="./assets/app.js"></script>
+  </body>
+</html>
+
+
+
+
+
+
+
+
